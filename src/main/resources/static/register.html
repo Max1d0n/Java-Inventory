@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — Inventory</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script>
+        const savedTheme = localStorage.getItem('theme') ||
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+</head>
+<body class="page-center">
+
+<div class="auth-box">
+    <h2>Create Account</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <select id="role" onchange="onRoleChange()">
+        <option value="ROLE_CUSTOMER">Customer</option>
+        <option value="ROLE_SUPPLIER">Supplier</option>
+    </select>
+    <div id="email-field" style="display:none;">
+        <input type="email" id="email" placeholder="Email (required for suppliers)">
+    </div>
+    <div class="g-recaptcha" data-sitekey="6LctEfEsAAAAAJIeyEU_A9RjrBWo5rBubS6NQn1w" style="margin-bottom:16px;"></div>
+    <button class="btn btn-primary" onclick="register()">Register</button>
+    <p class="msg-error" id="error" style="margin-top:12px;"></p>
+    <p class="auth-link">Already have an account? <a href="/login.html">Login</a></p>
+</div>
+
+<script>
+    if (localStorage.getItem('token')) window.location.href = '/index.html';
+
+    function onRoleChange() {
+        const role = document.getElementById('role').value;
+        document.getElementById('email-field').style.display =
+            role === 'ROLE_SUPPLIER' ? 'block' : 'none';
+    }
+
+    async function register() {
+        const captcha = grecaptcha.getResponse();
+        if (!captcha) {
+            showError('Please complete the captcha!');
+            return;
+        }
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const role = document.getElementById('role').value;
+        const email = document.getElementById('email').value;
+
+        const body = { username, password, role, captcha };
+        if (email) body.email = email;
+
+        const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            const loginRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await loginRes.json();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', username);
+            localStorage.setItem('role', data.role);
+            window.location.href = '/index.html';
+        } else {
+            const err = await res.json();
+            showError(err.message || 'Registration failed');
+        }
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('error');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+</script>
+</body>
+</html>

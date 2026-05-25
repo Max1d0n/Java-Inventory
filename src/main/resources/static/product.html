@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/header.js" defer></script>
+    <script>
+        const savedTheme = localStorage.getItem('theme') ||
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+</head>
+<body>
+
+<app-header type="back" title="Product" back="/index.html"></app-header>
+
+<div class="container-md" style="padding:0; overflow:hidden;" id="product-container"></div>
+
+<script>
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    async function loadProduct() {
+        const res = await fetch(`/api/products/${id}`);
+        const p = await res.json();
+        const role = localStorage.getItem('role');
+
+        const actions = `
+            <div class="actions">
+                ${role === 'ROLE_SUPPLIER' || role === 'ROLE_ADMIN'
+            ? `<button class="btn btn-primary" style="width:auto;" onclick="editProduct()">Edit</button>`
+            : ''}
+                ${role === 'ROLE_ADMIN'
+            ? `<button class="btn btn-danger" onclick="deleteProduct()">Delete</button>`
+            : ''}
+            </div>
+        `;
+
+        document.title = p.name;
+        document.getElementById('product-container').innerHTML = `
+            ${p.imageUrl
+            ? `<img class="product-image" src="${p.imageUrl}" alt="${p.name}">`
+            : `<div class="product-no-image">📦</div>`
+        }
+            <div class="product-details">
+                <h1>${p.name}</h1>
+                <div class="product-price">$${p.price}</div>
+                <div class="info-row">
+                    <div class="info-item">📦 In stock: ${p.quantity}</div>
+                    <div class="info-item">🏷️ ${p.category}</div>
+                    ${p.supplier ? `<div class="info-item">🏭 ${p.supplier}</div>` : ''}
+                </div>
+                <p class="product-description">${p.description || 'No description available.'}</p>
+                ${actions}
+            </div>
+        `;
+    }
+
+    async function deleteProduct() {
+        if (!confirm('Delete this product?')) return;
+        await fetch(`/api/products/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        window.location.href = '/index.html';
+    }
+
+    function editProduct() {
+        window.location.href = `/add.html?id=${id}`;
+    }
+
+    loadProduct();
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/header.js" defer></script>
+    <script>
+        const savedTheme = localStorage.getItem('theme') ||
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+</head>
+<body>
+
+<app-header type="back" title="Admin Panel" back="/index.html"></app-header>
+
+<div class="container">
+    <input type="text" class="search-bar" placeholder="Search by username or email..." oninput="filterUsers()">
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="users-table"></tbody>
+    </table>
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (!token || role !== 'ROLE_ADMIN') window.location.href = '/index.html';
+
+    let allUsers = [];
+
+    async function loadUsers() {
+        const res = await fetch('/api/admin/users', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        allUsers = await res.json();
+        renderUsers(allUsers);
+    }
+
+    function renderUsers(users) {
+        const tbody = document.getElementById('users-table');
+        tbody.innerHTML = '';
+        users.forEach(user => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email || '—'}</td>
+                    <td>
+                        <select id="role-${user.id}">
+                            <option value="ROLE_CUSTOMER" ${user.role === 'ROLE_CUSTOMER' ? 'selected' : ''}>Customer</option>
+                            <option value="ROLE_SUPPLIER" ${user.role === 'ROLE_SUPPLIER' ? 'selected' : ''}>Supplier</option>
+                            <option value="ROLE_ADMIN" ${user.role === 'ROLE_ADMIN' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                        <button class="btn btn-primary btn-sm" onclick="updateRole(${user.id})">Save</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function filterUsers() {
+        const query = document.querySelector('.search-bar').value.toLowerCase();
+        const filtered = allUsers.filter(u =>
+            u.username.toLowerCase().includes(query) ||
+            (u.email && u.email.toLowerCase().includes(query))
+        );
+        renderUsers(filtered);
+    }
+
+    async function updateRole(id) {
+        const newRole = document.getElementById(`role-${id}`).value;
+        const res = await fetch(`/api/admin/users/${id}/role`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ role: newRole })
+        });
+        if (res.ok) { alert('Role updated!'); loadUsers(); }
+    }
+
+    async function deleteUser(id) {
+        if (!confirm('Delete this user?')) return;
+        await fetch(`/api/admin/users/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        loadUsers();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadUsers);
+</script>
+</body>
+</html>
