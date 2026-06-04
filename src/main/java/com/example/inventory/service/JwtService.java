@@ -1,4 +1,4 @@
-package com.example.inventory;
+package com.example.inventory.service;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

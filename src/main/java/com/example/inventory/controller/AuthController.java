@@ -1,11 +1,15 @@
-package com.example.inventory;
+package com.example.inventory.controller;
 
+import com.example.inventory.service.JwtService;
+import com.example.inventory.entity.User;
+import com.example.inventory.repository.UserRepository;
 import com.example.inventory.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -13,8 +17,12 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "API for user authentication and profile management")
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -41,6 +49,7 @@ public class AuthController {
         return response != null && Boolean.TRUE.equals(response.get("success"));
     }
 
+    @Operation(summary = "Register new user", description = "Creates a new user account with captcha verification")
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
         log.info("New user registration attempt: {}", request.getUsername());
@@ -72,6 +81,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "User registered successfully"));
     }
 
+    @Operation(summary = "Login", description = "Authenticates user and returns JWT token")
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("Login attempt for user: {}", request.getUsername());
@@ -86,8 +96,15 @@ public class AuthController {
         return ResponseEntity.ok(new LoginResponse(token, user.getRole(), user.getUsername()));
     }
 
+    @Operation(summary = "Get current user profile", description = "Returns profile data of the authenticated user")
     @GetMapping("/profile")
-    public ResponseEntity<User> getProfile(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<User> getProfile(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         String token = authHeader.substring(7);
         String username = jwtService.extractUsername(token);
         User user = userRepository.findByUsername(username)
@@ -95,10 +112,15 @@ public class AuthController {
         return ResponseEntity.ok(user);
     }
 
+    @Operation(summary = "Update email", description = "Updates email address of the authenticated user")
     @PutMapping("/profile/email")
     public ResponseEntity<Map<String, String>> updateEmail(
-            @RequestHeader("Authorization") String authHeader,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody UpdateEmailRequest request) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         String token = authHeader.substring(7);
         String username = jwtService.extractUsername(token);
         User user = userRepository.findByUsername(username)
@@ -109,6 +131,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Email updated successfully"));
     }
 
+    @Operation(summary = "Update password", description = "Updates password of the authenticated user")
     @PutMapping("/profile/password")
     public ResponseEntity<Map<String, String>> updatePassword(
             @RequestHeader("Authorization") String authHeader,

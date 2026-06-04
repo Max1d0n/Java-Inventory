@@ -1,5 +1,8 @@
 package com.example.inventory;
 
+import com.example.inventory.entity.Product;
+import com.example.inventory.repository.ProductRepository;
+import com.example.inventory.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

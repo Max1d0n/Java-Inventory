@@ -1,4 +1,4 @@
-package com.example.inventory;
+package com.example.inventory.security;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

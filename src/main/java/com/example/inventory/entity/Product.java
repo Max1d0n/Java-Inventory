@@ -1,4 +1,4 @@
-package com.example.inventory;
+package com.example.inventory.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;

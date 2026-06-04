@@ -1,5 +1,7 @@
-package com.example.inventory;
+package com.example.inventory.service;
 
+import com.example.inventory.entity.Product;
+import com.example.inventory.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;

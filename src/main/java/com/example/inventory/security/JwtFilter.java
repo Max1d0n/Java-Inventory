@@ -1,5 +1,6 @@
-package com.example.inventory;
+package com.example.inventory.security;
 
+import com.example.inventory.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
